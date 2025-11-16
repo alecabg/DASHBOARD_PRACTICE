@@ -133,12 +133,16 @@ with col1:
     st.subheader("Sales by Category")
     fig = px.bar(category_df, x = "Category", y = "Sales", text = ["${:,.2f}".format(x) for x in category_df["Sales"]],
                 template = "seaborn")
+    # --- HOVER FIX ---
+    fig.update_traces(hovertemplate="<b>Categoría</b>: %{x}<br><b>Ventas</b>: %{y:$,.2f}")
     st.plotly_chart(fig, use_container_width= True, height= 200)
 
 with col2:
     st.subheader("Sales by Region")
     fig = px.pie(filtered_df, values = "Sales", names = "Region", hole = 0.5)
-    fig.update_traces(text = filtered_df["Region"], textposition = "outside")
+    # --- HOVER FIX ---
+    fig.update_traces(text = filtered_df["Region"], textposition = "outside",
+                      hovertemplate="<b>Región</b>: %{label}<br><b>Ventas</b>: %{value:$,.2f}<br><b>Porcentaje</b>: %{percent}")
     st.plotly_chart(fig, use_container_width=True)
 
 cl1 , cl2 = st.columns(2)
@@ -175,10 +179,11 @@ time_y_var = st.selectbox(
 
 # 3. Gráfico dinámico
 linechart = pd.DataFrame(filtered_df.groupby(filtered_df["month_year"].dt.strftime("%Y : %b"))[time_y_var].sum()).reset_index()
-fig2 = px.line(linechart, x = "month_year", y = time_y_var, labels = {time_y_var: "Monto Total"}, height = 500, width = 1000, template = "gridon")
+# --- HOVER FIX: Quitado el 'labels' que creaba "Monto Total" ---
+fig2 = px.line(linechart, x = "month_year", y = time_y_var, height = 500, width = 1000, template = "gridon")
 
-# 4. Arreglo del Hover (Formato)
-fig2.update_traces(hovertemplate="<b>Mes</b>: %{x}<br><b>Monto</b>: %{y:$,.2f}")
+# 4. Arreglo del Hover (Formato) - Ahora usa la variable dinámica 'time_y_var'
+fig2.update_traces(hovertemplate=f"<b>Mes</b>: %{{x}}<br><b>{time_y_var}</b>: %{{y:$,.2f}}")
 st.plotly_chart(fig2, use_container_width= True)
 # --- FIN CAMBIO 1 ---
 
@@ -193,19 +198,25 @@ st.subheader("Hierarchical View of Sales using TreeMap")
 fig3 = px.treemap(filtered_df, path = ("Region", "Category", "Sub-Category"), values = "Sales", hover_data=["Sales"],
                 color = "Sub-Category")
 fig3.update_layout(width = 800, height = 650)
+# --- HOVER FIX ---
+fig3.update_traces(hovertemplate="<b>%{label}</b><br><b>Ventas</b>: %{value:$,.2f}<br><b>Padre</b>: %{parent}")
 st.plotly_chart(fig3, use_container_width= True)
 
 chart1, chart2 = st.columns(2)
 with chart1:
     st.subheader("Sales by Segment")
     fig = px.pie(filtered_df, values = "Sales", names = "Segment", template = "plotly_dark")
-    fig.update_traces(text = filtered_df["Segment"], textposition = "inside")
+    # --- HOVER FIX ---
+    fig.update_traces(text = filtered_df["Segment"], textposition = "inside",
+                      hovertemplate="<b>Segmento</b>: %{label}<br><b>Ventas</b>: %{value:$,.2f}<br><b>Porcentaje</b>: %{percent}")
     st.plotly_chart(fig, use_container_width=True)
 
 with chart2:
     st.subheader("Sales by Category")
     fig = px.pie(filtered_df, values = "Sales", names = "Category", template = "gridon")
-    fig.update_traces(text = filtered_df["Category"], textposition = "inside")
+    # --- HOVER FIX ---
+    fig.update_traces(text = filtered_df["Category"], textposition = "inside",
+                      hovertemplate="<b>Categoría</b>: %{label}<br><b>Ventas</b>: %{value:$,.2f}<br><b>Porcentaje</b>: %{percent}")
     st.plotly_chart(fig, use_container_width=True)
 
 import plotly.figure_factory as ff
@@ -236,6 +247,7 @@ with col_size:
 data1 = px.scatter(filtered_df, x = x_var, y = y_var, size = size_var, custom_data=[x_var, y_var, size_var])
 
 # 3. Arreglo del Hover (Formato)
+# --- HOVER FIX --- (Mantenemos el formato bueno, con etiquetas y formato de moneda)
 data1.update_traces(hovertemplate=f"<b>{x_var}</b>: %{{x:$,.2f}}<br><b>{y_var}</b>: %{{y:$,.2f}}<br><b>{size_var}</b>: %{{customdata[2]:,.0f}}")
 
 # 4. Actualización del layout (títulos dinámicos)
