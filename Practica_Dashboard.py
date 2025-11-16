@@ -164,7 +164,7 @@ with cl2:
 filtered_df["month_year"] = filtered_df["Order Date"].dt.to_period("M")
 
 # --- CAMBIO 1: TIME SERIES DINÁMICO ---
-st.subheader("Análisis de Series de Tiempo")
+st.subheader("Time-Series Analysis")
 
 # 1. Lista de columnas numéricas
 numeric_cols = filtered_df.select_dtypes(include=np.number).columns.tolist()
@@ -232,7 +232,7 @@ with st.expander("Summary_Table"):
     st.write(sub_category_Year.style.background_gradient(cmap = "Blues"))
 
 # --- CAMBIO 2: SCATTER PLOT DINÁMICO Y CON HOVER LIMPIO ---
-st.subheader("Análisis de Correlación (Scatter Plot)")
+st.subheader("Scatter Plot")
 
 # 1. Selectores de variables (usamos 'numeric_cols' que ya definimos)
 col_x, col_y, col_size = st.columns(3)
