@@ -133,16 +133,16 @@ with col1:
     st.subheader("Sales by Category")
     fig = px.bar(category_df, x = "Category", y = "Sales", text = ["${:,.2f}".format(x) for x in category_df["Sales"]],
                 template = "seaborn")
-    # --- HOVER FIX ---
-    fig.update_traces(hovertemplate="<b>Categoría</b>: %{x}<br><b>Ventas</b>: %{y:$,.2f}")
+    # --- HOVER FIX (Traducido) ---
+    fig.update_traces(hovertemplate="<b>Category</b>: %{x}<br><b>Sales</b>: %{y:$,.2f}")
     st.plotly_chart(fig, use_container_width= True, height= 200)
 
 with col2:
     st.subheader("Sales by Region")
     fig = px.pie(filtered_df, values = "Sales", names = "Region", hole = 0.5)
-    # --- HOVER FIX ---
+    # --- HOVER FIX (Traducido) ---
     fig.update_traces(text = filtered_df["Region"], textposition = "outside",
-                      hovertemplate="<b>Región</b>: %{label}<br><b>Ventas</b>: %{value:$,.2f}<br><b>Porcentaje</b>: %{percent}")
+                      hovertemplate="<b>Region</b>: %{label}<br><b>Sales</b>: %{value:$,.2f}<br><b>Percentage</b>: %{percent}")
     st.plotly_chart(fig, use_container_width=True)
 
 cl1 , cl2 = st.columns(2)
@@ -171,7 +171,7 @@ numeric_cols = filtered_df.select_dtypes(include=np.number).columns.tolist()
 
 # 2. Selector para la métrica (Y-axis)
 time_y_var = st.selectbox(
-    "Elige la métrica para la serie de tiempo:", 
+    "Choose the metric for the time series:", 
     numeric_cols, 
     index=numeric_cols.index('Sales') if 'Sales' in numeric_cols else 0, 
     key="time_y"
@@ -179,17 +179,17 @@ time_y_var = st.selectbox(
 
 # 3. Gráfico dinámico
 linechart = pd.DataFrame(filtered_df.groupby(filtered_df["month_year"].dt.strftime("%Y : %b"))[time_y_var].sum()).reset_index()
-# --- HOVER FIX: Quitado el 'labels' que creaba "Monto Total" ---
 fig2 = px.line(linechart, x = "month_year", y = time_y_var, height = 500, width = 1000, template = "gridon")
 
 # 4. Arreglo del Hover (Formato) - Ahora usa la variable dinámica 'time_y_var'
-fig2.update_traces(hovertemplate=f"<b>Mes</b>: %{{x}}<br><b>{time_y_var}</b>: %{{y:$,.2f}}")
+fig2.update_traces(hovertemplate=f"<b>Month</b>: %{{x}}<br><b>{time_y_var}</b>: %{{y:$,.2f}}")
 st.plotly_chart(fig2, use_container_width= True)
 # --- FIN CAMBIO 1 ---
 
 with st.expander("View TimeSeries Data: "):
     st.write(linechart.style.background_gradient(cmap = "Blues"))
     csv = linechart.to_csv(index = False).encode("utf-8")
+    # --- TYPO FIX (Traducido) ---
     st.download_button("Download Data", data = csv, file_name="TimeSeries.csv", mime = "text/csv",
                         help = "Click here to Download the Data as a CSV file", key="csv_timeseries")
     
@@ -198,25 +198,25 @@ st.subheader("Hierarchical View of Sales using TreeMap")
 fig3 = px.treemap(filtered_df, path = ("Region", "Category", "Sub-Category"), values = "Sales", hover_data=["Sales"],
                 color = "Sub-Category")
 fig3.update_layout(width = 800, height = 650)
-# --- HOVER FIX ---
-fig3.update_traces(hovertemplate="<b>%{label}</b><br><b>Ventas</b>: %{value:$,.2f}<br><b>Padre</b>: %{parent}")
+# --- HOVER FIX (Traducido) ---
+fig3.update_traces(hovertemplate="<b>%{label}</b><br><b>Sales</b>: %{value:$,.2f}<br><b>Parent</b>: %{parent}")
 st.plotly_chart(fig3, use_container_width= True)
 
 chart1, chart2 = st.columns(2)
 with chart1:
     st.subheader("Sales by Segment")
     fig = px.pie(filtered_df, values = "Sales", names = "Segment", template = "plotly_dark")
-    # --- HOVER FIX ---
+    # --- HOVER FIX (Traducido) ---
     fig.update_traces(text = filtered_df["Segment"], textposition = "inside",
-                      hovertemplate="<b>Segmento</b>: %{label}<br><b>Ventas</b>: %{value:$,.2f}<br><b>Porcentaje</b>: %{percent}")
+                      hovertemplate="<b>Segment</b>: %{label}<br><b>Sales</b>: %{value:$,.2f}<br><b>Percentage</b>: %{percent}")
     st.plotly_chart(fig, use_container_width=True)
 
 with chart2:
     st.subheader("Sales by Category")
     fig = px.pie(filtered_df, values = "Sales", names = "Category", template = "gridon")
-    # --- HOVER FIX ---
+    # --- HOVER FIX (Traducido) ---
     fig.update_traces(text = filtered_df["Category"], textposition = "inside",
-                      hovertemplate="<b>Categoría</b>: %{label}<br><b>Ventas</b>: %{value:$,.2f}<br><b>Porcentaje</b>: %{percent}")
+                      hovertemplate="<b>Category</b>: %{label}<br><b>Sales</b>: %{value:$,.2f}<br><b>Percentage</b>: %{percent}")
     st.plotly_chart(fig, use_container_width=True)
 
 import plotly.figure_factory as ff
@@ -237,11 +237,11 @@ st.subheader("Scatter Plot")
 # 1. Selectores de variables (usamos 'numeric_cols' que ya definimos)
 col_x, col_y, col_size = st.columns(3)
 with col_x:
-    x_var = st.selectbox("Elige la variable X:", numeric_cols, index=numeric_cols.index('Sales') if 'Sales' in numeric_cols else 0, key="scatter_x")
+    x_var = st.selectbox("Choose the X variable:", numeric_cols, index=numeric_cols.index('Sales') if 'Sales' in numeric_cols else 0, key="scatter_x")
 with col_y:
-    y_var = st.selectbox("Elige la variable Y:", numeric_cols, index=numeric_cols.index('Profit') if 'Profit' in numeric_cols else 0, key="scatter_y")
+    y_var = st.selectbox("Choose the Y variable:", numeric_cols, index=numeric_cols.index('Profit') if 'Profit' in numeric_cols else 0, key="scatter_y")
 with col_size:
-    size_var = st.selectbox("Elige la variable de Tamaño:", numeric_cols, index=numeric_cols.index('Quantity') if 'Quantity' in numeric_cols else 0, key="scatter_size")
+    size_var = st.selectbox("Choose the Size variable:", numeric_cols, index=numeric_cols.index('Quantity') if 'Quantity' in numeric_cols else 0, key="scatter_size")
 
 # 2. Gráfico dinámico
 data1 = px.scatter(filtered_df, x = x_var, y = y_var, size = size_var, custom_data=[x_var, y_var, size_var])
@@ -253,7 +253,7 @@ data1.update_traces(hovertemplate=f"<b>{x_var}</b>: %{{x:$,.2f}}<br><b>{y_var}</
 # 4. Actualización del layout (títulos dinámicos)
 data1.update_layout(
     title=dict(
-        text=f"Relación entre {x_var} y {y_var}",
+        text=f"Relationship between {x_var} and {y_var}",
         font=dict(size=20)
     ),
     xaxis=dict(
