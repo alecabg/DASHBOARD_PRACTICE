@@ -199,7 +199,7 @@ fig3 = px.treemap(filtered_df, path = ("Region", "Category", "Sub-Category"), va
                 color = "Sub-Category")
 fig3.update_layout(width = 800, height = 650)
 # --- HOVER FIX (Traducido) ---
-fig3.update_traces(hovertemplate="<b>%{label}</b><br><b>Sales</b>: %{value:$,.2f}<br><b>Parent</b>: %{parent}")
+fig3.update_traces(hovertemplate="<b>%{label}</b><br><b>Sales</b>: %{value:$,.2f}<br><b>Parent Category</b>: %{parent}")
 st.plotly_chart(fig3, use_container_width= True)
 
 chart1, chart2 = st.columns(2)
