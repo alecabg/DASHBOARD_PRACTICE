@@ -1,0 +1,5 @@
+# Ignorar la carpeta de secretos de Streamlit
+.streamlit/
+
+# Ignorar archivos basura de macOS
+.DS_Store
