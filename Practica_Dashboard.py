@@ -3,6 +3,8 @@ import plotly.express as px
 import pandas as pd
 import os
 import warnings
+from pathlib import Path  # <-- 1. IMPORTAMOS LA BIBLIOTECA "MÁGICA"
+
 warnings.filterwarnings("ignore")
 
 st.set_page_config(page_title="Superstore!!!", page_icon=":bar_chart:", layout="wide")
@@ -34,17 +36,18 @@ if not st.session_state.logged_in:
     elif not user_input and not password_input:
         st.warning("Please introduce login credentials on the sidebar to access the dashboard.")
 
-    # Detiene la app aquí si no estás logueado.
     st.stop() 
 
 # --- 4. SI LLEGAS AQUÍ, ES PORQUE SÍ ESTÁS LOGUEADO ---
-# Ahora cargamos los datos PRIMERO.
 
 st.title(" :bar_chart: Sample SuperStore EDA")
-
 fl = st.file_uploader(":file_folder: Upload a file", type=(["csv", "xlsx", "txt", "xls"]))
 
-# --- Lógica de Carga de Datos ---
+# --- 5. ¡¡AQUÍ ESTÁ EL ARREGLO PARA GITHUB!! ---
+# Creamos una ruta "portátil" que funciona en tu Mac y en la nube
+APP_DIR = Path(__file__).parent 
+DEFAULT_FILE_PATH = APP_DIR / "Sample - Superstore.xls"
+
 if fl is not None:
     filename = fl.name
     st.write(filename)
@@ -58,21 +61,26 @@ if fl is not None:
     else:
         st.error("Formato de archivo no soportado. Sube un CSV o Excel.")
         df = pd.DataFrame()
-
 else:
     # Carga por defecto
-    os.chdir("/Users/alecab/Documents/PYTHON/")
-    df = pd.read_excel("Sample - Superstore.xls")
+    # ¡YA NO USAMOS os.chdir! Usamos la ruta portátil
+    try:
+        df = pd.read_excel(DEFAULT_FILE_PATH)
+    except FileNotFoundError:
+        st.error(f"Archivo por defecto no encontrado en: {DEFAULT_FILE_PATH}")
+        st.info("Asegúrate de que 'Sample - Superstore.xls' está en tu repositorio de GitHub.")
+        df = pd.DataFrame()
+    except Exception as e:
+        st.error(f"Error al leer el archivo por defecto: {e}")
+        df = pd.DataFrame()
+
 
 # --- VALIDACIÓN ---
-# Si el df está vacío (ej: se subió un .txt), paramos aquí.
 if df.empty:
     st.warning("No hay datos para analizar. Sube un archivo válido.")
     st.stop()
 
-# --- 5. AHORA SÍ, CREAMOS LOS FILTROS DEL SIDEBAR ---
-# (Porque 'df' ya existe)
-
+# --- 6. AHORA SÍ, CREAMOS LOS FILTROS DEL SIDEBAR ---
 st.sidebar.header("Choose your filter: ")
 region = st.sidebar.multiselect("Pick your Region", df["Region"].unique(), key="region_filter")
 if not region:
@@ -88,13 +96,11 @@ else:
 
 city = st.sidebar.multiselect("Pick the City", df3["City"].unique(), key="city_filter")
 
-# Botón de Logout
 if st.sidebar.button("Logout", key="logout_button"):
     st.session_state.logged_in = False
     st.rerun()
 
-# --- 6. EL RESTO DE TU DASHBOARD (Página principal) ---
-
+# --- 7. EL RESTO DE TU DASHBOARD (Página principal) ---
 col1, col2 = st.columns((2))
 df["Order Date"] = pd.to_datetime(df["Order Date"])
 
