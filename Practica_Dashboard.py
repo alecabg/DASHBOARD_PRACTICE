@@ -3,7 +3,8 @@ import plotly.express as px
 import pandas as pd
 import os
 import warnings
-from pathlib import Path  # <-- 1. IMPORTAMOS LA BIBLIOTECA "MÁGICA"
+import numpy as np  # Necesario para seleccionar columnas numéricas
+from pathlib import Path
 
 warnings.filterwarnings("ignore")
 
@@ -36,6 +37,7 @@ if not st.session_state.logged_in:
     elif not user_input and not password_input:
         st.warning("Please introduce login credentials on the sidebar to access the dashboard.")
 
+    # Detiene la app aquí. El resto del código no se ejecutará.
     st.stop() 
 
 # --- 4. SI LLEGAS AQUÍ, ES PORQUE SÍ ESTÁS LOGUEADO ---
@@ -43,12 +45,12 @@ if not st.session_state.logged_in:
 st.title(" :bar_chart: Sample SuperStore EDA")
 fl = st.file_uploader(":file_folder: Upload a file", type=(["csv", "xlsx", "txt", "xls"]))
 
-# --- 5. ¡¡AQUÍ ESTÁ EL ARREGLO PARA GITHUB!! ---
-# Creamos una ruta "portátil" que funciona en tu Mac y en la nube
+# --- 5. LÓGICA DE CARGA DE DATOS (CORREGIDA PARA GITHUB) ---
 APP_DIR = Path(__file__).parent 
 DEFAULT_FILE_PATH = APP_DIR / "Sample - Superstore.xls"
 
 if fl is not None:
+    # Si se sube un archivo...
     filename = fl.name
     st.write(filename)
     
@@ -60,10 +62,9 @@ if fl is not None:
         df = pd.read_csv(fl, encoding="ISO-8859-1")
     else:
         st.error("Formato de archivo no soportado. Sube un CSV o Excel.")
-        df = pd.DataFrame()
+        df = pd.DataFrame() # Creamos un df vacío
 else:
-    # Carga por defecto
-    # ¡YA NO USAMOS os.chdir! Usamos la ruta portátil
+    # Carga por defecto si no se sube nada
     try:
         df = pd.read_excel(DEFAULT_FILE_PATH)
     except FileNotFoundError:
@@ -78,9 +79,10 @@ else:
 # --- VALIDACIÓN ---
 if df.empty:
     st.warning("No hay datos para analizar. Sube un archivo válido.")
-    st.stop()
+    st.stop() # Detiene el script para evitar errores
 
-# --- 6. AHORA SÍ, CREAMOS LOS FILTROS DEL SIDEBAR ---
+# --- 6. FILTROS DEL SIDEBAR ---
+# Ahora que 'df' existe, creamos los filtros.
 st.sidebar.header("Choose your filter: ")
 region = st.sidebar.multiselect("Pick your Region", df["Region"].unique(), key="region_filter")
 if not region:
@@ -96,11 +98,14 @@ else:
 
 city = st.sidebar.multiselect("Pick the City", df3["City"].unique(), key="city_filter")
 
+# Botón de Logout
 if st.sidebar.button("Logout", key="logout_button"):
-    st.session_state.logged_in = False
-    st.rerun()
+    st.session_state.logged_in = False # Olvida que estaba logueado
+    st.rerun() # Vuelve a correr (y mostrará el login)
+
 
 # --- 7. EL RESTO DE TU DASHBOARD (Página principal) ---
+
 col1, col2 = st.columns((2))
 df["Order Date"] = pd.to_datetime(df["Order Date"])
 
@@ -153,11 +158,29 @@ with cl2:
                             help = "Click here to Download the Data as a CSV file", key="csv_region")
 
 filtered_df["month_year"] = filtered_df["Order Date"].dt.to_period("M")
-st.subheader("Time Series Analysis")
 
-linechart = pd.DataFrame(filtered_df.groupby(filtered_df["month_year"].dt.strftime("%Y : %b"))["Sales"].sum()).reset_index()
-fig2 = px.line(linechart, x = "month_year", y = "Sales", labels = {"Sales": "Amount"}, height = 500, width = 1000, template = "gridon")
+# --- CAMBIO 1: TIME SERIES DINÁMICO ---
+st.subheader("Análisis de Series de Tiempo")
+
+# 1. Lista de columnas numéricas
+numeric_cols = filtered_df.select_dtypes(include=np.number).columns.tolist()
+
+# 2. Selector para la métrica (Y-axis)
+time_y_var = st.selectbox(
+    "Elige la métrica para la serie de tiempo:", 
+    numeric_cols, 
+    index=numeric_cols.index('Sales') if 'Sales' in numeric_cols else 0, 
+    key="time_y"
+)
+
+# 3. Gráfico dinámico
+linechart = pd.DataFrame(filtered_df.groupby(filtered_df["month_year"].dt.strftime("%Y : %b"))[time_y_var].sum()).reset_index()
+fig2 = px.line(linechart, x = "month_year", y = time_y_var, labels = {time_y_var: "Monto Total"}, height = 500, width = 1000, template = "gridon")
+
+# 4. Arreglo del Hover (Formato)
+fig2.update_traces(hovertemplate="<b>Mes</b>: %{x}<br><b>Monto</b>: %{y:$,.2f}")
 st.plotly_chart(fig2, use_container_width= True)
+# --- FIN CAMBIO 1 ---
 
 with st.expander("View TimeSeries Data: "):
     st.write(linechart.style.background_gradient(cmap = "Blues"))
@@ -197,27 +220,45 @@ with st.expander("Summary_Table"):
     sub_category_Year = pd.pivot_table(data = filtered_df, values = "Sales", index = ["Sub-Category"], columns = "month")
     st.write(sub_category_Year.style.background_gradient(cmap = "Blues"))
 
-# Create a Scatterplot
-data1 = px.scatter(filtered_df, x = "Sales", y = "Profit", size = "Quantity")
-data1["layout"].update(
-    title = dict(
-        text = "Relationship between Sales and Profit using Scatterplot.",
-        font = dict(size = 20)
+# --- CAMBIO 2: SCATTER PLOT DINÁMICO Y CON HOVER LIMPIO ---
+st.subheader("Análisis de Correlación (Scatter Plot)")
+
+# 1. Selectores de variables (usamos 'numeric_cols' que ya definimos)
+col_x, col_y, col_size = st.columns(3)
+with col_x:
+    x_var = st.selectbox("Elige la variable X:", numeric_cols, index=numeric_cols.index('Sales') if 'Sales' in numeric_cols else 0, key="scatter_x")
+with col_y:
+    y_var = st.selectbox("Elige la variable Y:", numeric_cols, index=numeric_cols.index('Profit') if 'Profit' in numeric_cols else 0, key="scatter_y")
+with col_size:
+    size_var = st.selectbox("Elige la variable de Tamaño:", numeric_cols, index=numeric_cols.index('Quantity') if 'Quantity' in numeric_cols else 0, key="scatter_size")
+
+# 2. Gráfico dinámico
+data1 = px.scatter(filtered_df, x = x_var, y = y_var, size = size_var, custom_data=[x_var, y_var, size_var])
+
+# 3. Arreglo del Hover (Formato)
+data1.update_traces(hovertemplate=f"<b>{x_var}</b>: %{{x:$,.2f}}<br><b>{y_var}</b>: %{{y:$,.2f}}<br><b>{size_var}</b>: %{{customdata[2]:,.0f}}")
+
+# 4. Actualización del layout (títulos dinámicos)
+data1.update_layout(
+    title=dict(
+        text=f"Relación entre {x_var} y {y_var}",
+        font=dict(size=20)
     ),
-    xaxis = dict(
-        title = dict(
-            text = "Sales",
-            font = dict(size = 19)
+    xaxis=dict(
+        title=dict(
+            text=x_var,
+            font=dict(size=19)
         )
     ),
-    yaxis = dict(
-        title = dict(
-            text = "Profit",
-            font = dict(size = 19)
+    yaxis=dict(
+        title=dict(
+            text=y_var,
+            font=dict(size=19)
         )
     )
 )
 st.plotly_chart(data1, use_container_width= True)
+# --- FIN CAMBIO 2 ---
 
 with st.expander("View Data"):
     st.write(filtered_df.iloc[:500,1:20:2].style.background_gradient(cmap = "Oranges"))
